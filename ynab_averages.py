@@ -4,6 +4,7 @@ import yaml
 import datetime
 from dateutil.relativedelta import relativedelta
 
+# Get transactions from YNAB
 def get_transactions(api_token, budget_id, start_date):
     url = f'https://api.youneedabudget.com/v1/budgets/{budget_id}/transactions'
     headers = {
@@ -41,6 +42,7 @@ def calculate_monthly_average_spent(transactions, last_day, n_months):
             for subtransaction in transaction['subtransactions']:
                 update_totals(subtransaction['category_name'], subtransaction['amount'])
 
+    # Calculate the average amount spent per month for each category
     category_averages = {}
     for category_name, total in category_totals.items():
         category_averages[category_name] = total / (n_months * 1000)
@@ -64,12 +66,20 @@ def read_config(file_path):
     return config
 
 def get_ynab_spending_averages(n_months):
+    # Get YNAB API token and budget ID from config file
     config = read_config('config.yaml')
     ynab_api_token = config['ynab_api_token']
     ynab_budget_id = config['ynab_budget_id']
+
+    # Get transactions from the start of the month n months ago to the end of the
+    # previous month
     last_day_of_previous_month = get_last_day_of_previous_month()
     first_day_of_n_months_ago = get_first_day_of_n_months_ago(n_months)
+
+    # Get transactions from YNAB
     transactions = get_transactions(ynab_api_token, ynab_budget_id, first_day_of_n_months_ago)
+
+    # Calculate the average amount spent per month for each category
     return calculate_monthly_average_spent(transactions, last_day_of_previous_month, n_months)
 
 if __name__ == '__main__':
