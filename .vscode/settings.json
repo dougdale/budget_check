@@ -2,6 +2,8 @@
     "cSpell.words": [
         "dateutil",
         "relativedelta",
+        "subtransaction",
+        "subtransactions",
         "ynab"
     ]
 }

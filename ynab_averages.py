@@ -16,20 +16,6 @@ def get_transactions(api_token, budget_id, start_date):
     response.raise_for_status()
     return response.json()['data']['transactions']
 
-def get_categories(api_token, budget_id):
-    url = f'https://api.youneedabudget.com/v1/budgets/{budget_id}/categories'
-    headers = {
-        'Authorization': f'Bearer {api_token}'
-    }
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    categories = response.json()['data']['category_groups']
-    category_map = {}
-    for group in categories:
-        for category in group['categories']:
-            category_map[category['id']] = category['name']
-    return category_map
-
 # Calculate the average amount spent per month for each category
 # We pass in the explicit end date so we don't have any "date math" issues and
 # n_months in case there are categories with no transactions in the last n
@@ -37,26 +23,28 @@ def get_categories(api_token, budget_id):
 def calculate_monthly_average_spent(transactions, last_day, n_months):
     category_totals = {}
 
-    for transaction in transactions:
-        category_id = transaction['category_id']
-        amount = transaction['amount']
+    def update_totals(category_name, amount):
+        if category_name not in category_totals:
+            category_totals[category_name] =  0
 
+        category_totals[category_name] += amount
+
+    # Get category totals for each transaction, taking into account subtransactions
+    for transaction in transactions:
         date = datetime.datetime.strptime(transaction['date'], '%Y-%m-%d')
         if date > last_day:
             continue
 
-        month = date.strftime('%Y-%m')
+        if len(transaction['subtransactions']) == 0:
+            update_totals(transaction['category_name'], transaction['amount'])
+        else:
+            for subtransaction in transaction['subtransactions']:
+                update_totals(subtransaction['category_name'], subtransaction['amount'])
 
-        if category_id not in category_totals:
-            category_totals[category_id] = {}
+    category_averages = {}
+    for category_name, total in category_totals.items():
+        category_averages[category_name] = total / (n_months * 1000)
 
-        if month not in category_totals[category_id]:
-            category_totals[category_id][month] = 0
-
-        category_totals[category_id][month] += amount
-
-    print(category_totals)
-    category_averages = {category_id: sum(month_totals.values()) / n_months for category_id, month_totals in category_totals.items()}
     return category_averages
 
 def get_last_day_of_previous_month():
@@ -75,20 +63,17 @@ def read_config(file_path):
         config = yaml.safe_load(file)
     return config
 
-def main():
+def get_ynab_spending_averages(n_months):
     config = read_config('config.yaml')
     ynab_api_token = config['ynab_api_token']
     ynab_budget_id = config['ynab_budget_id']
-    n_months = 12
     last_day_of_previous_month = get_last_day_of_previous_month()
     first_day_of_n_months_ago = get_first_day_of_n_months_ago(n_months)
     transactions = get_transactions(ynab_api_token, ynab_budget_id, first_day_of_n_months_ago)
-    category_map = get_categories(ynab_api_token, ynab_budget_id)
-    averages = calculate_monthly_average_spent(transactions, last_day_of_previous_month, n_months)
-
-    for category_id, average in averages.items():
-        category_name = category_map.get(category_id, 'Unknown Category')
-        print(f'Category: {category_name}, Monthly Average Spent: {average / 1000:.2f}')
+    return calculate_monthly_average_spent(transactions, last_day_of_previous_month, n_months)
 
 if __name__ == '__main__':
-    main()
+    data = get_ynab_spending_averages(12)
+
+    for category, average in data.items():
+        print(f'{category}: {average:.2f}')
