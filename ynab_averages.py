@@ -3,6 +3,7 @@ import requests
 import yaml
 import datetime
 from dateutil.relativedelta import relativedelta
+import argparse
 
 # Get transactions from YNAB
 def get_transactions(api_token, budget_id, start_date):
@@ -76,6 +77,8 @@ def get_ynab_spending_averages(n_months):
     last_day_of_previous_month = get_last_day_of_previous_month()
     first_day_of_n_months_ago = get_first_day_of_n_months_ago(n_months)
 
+    print(first_day_of_n_months_ago)
+    print(last_day_of_previous_month)
     # Get transactions from YNAB
     transactions = get_transactions(ynab_api_token, ynab_budget_id, first_day_of_n_months_ago)
 
@@ -83,7 +86,11 @@ def get_ynab_spending_averages(n_months):
     return calculate_monthly_average_spent(transactions, last_day_of_previous_month, n_months)
 
 if __name__ == '__main__':
-    data = get_ynab_spending_averages(12)
+    parser = argparse.ArgumentParser(description='Calculate YNAB spending averages.')
+    parser.add_argument('n_months', type=int, help='Number of months to calculate averages for')
+    args = parser.parse_args()
+
+    data = get_ynab_spending_averages(args.n_months)
 
     for category, average in data.items():
         print(f'{category}: {average:.2f}')
