@@ -4,6 +4,7 @@ import yaml
 import datetime
 from dateutil.relativedelta import relativedelta
 import argparse
+import json
 
 # Get transactions from YNAB
 def get_transactions(api_token, budget_id, start_date):
@@ -97,12 +98,16 @@ def get_ynab_spending_averages(n_months_list):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calculate YNAB spending averages.')
+    parser.add_argument('--json', action='store_true', help='Output data in JSON format')
     parser.add_argument('n_months', type=int, nargs='*', help='Number of months to calculate averages for')
     args = parser.parse_args()
 
     data = get_ynab_spending_averages(args.n_months)
 
-    for item in data:
-        print(f'{item["months"]} months:')
-        for category, average in item['averages'].items():
-            print(f'{category}: {average:.2f}')
+    if args.json:
+        print(json.dumps(data, indent=2))
+    else:
+        for item in data:
+            print(f'{item["months"]} months:')
+            for category, average in item['averages'].items():
+                print(f'{category}: {average:.2f}')
