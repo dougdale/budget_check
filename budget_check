@@ -30,6 +30,7 @@ def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Compare YNAB spending averages with budget data.')
     parser.add_argument('budget_file', type=str, help='Path to the budget JSON file')
+    parser.add_argument('--output', type=str, default='comparison_results.xlsx', help='Path to the output Excel file')
     args = parser.parse_args()
 
     # Load budget data
@@ -65,8 +66,9 @@ def main():
     # Sort the DataFrame by the category name then by the 'Months' column
     df.sort_values(by=['Category', 'Months'], inplace=True)
 
-    # Print the DataFrame
-    print(df)
+    # Write the DataFrame to an Excel file
+    df.to_excel(args.output, index=False)
+    print(f"Comparison results saved to {args.output}")
 
 if __name__ == '__main__':
     main()
