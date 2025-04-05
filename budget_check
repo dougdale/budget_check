@@ -2,6 +2,7 @@
 import json
 import pandas as pd
 import argparse
+import datetime
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 from openpyxl.formatting.rule import CellIsRule
@@ -59,6 +60,14 @@ def apply_conditional_formatting(file_path):
     # Save the workbook with formatting applied
     workbook.save(file_path)
 
+def set_sheet_name_to_date(file_path):
+    """Set the sheet name in the Excel file to the current date."""
+    workbook = load_workbook(file_path)
+    current_date = datetime.datetime.now().strftime('%Y-%m-%d')  # Format the date as YYYY-MM-DD
+    sheet = workbook.active
+    sheet.title = current_date  # Set the sheet name to the current date
+    workbook.save(file_path)
+
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Compare YNAB spending averages with budget data.')
@@ -104,6 +113,9 @@ def main():
 
     # Apply conditional formatting to the Excel file
     apply_conditional_formatting(args.output)
+
+    # Set the sheet name to the current date
+    set_sheet_name_to_date(args.output)
 
     print(f"Comparison results saved to {args.output}")
 
