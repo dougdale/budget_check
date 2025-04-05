@@ -1,6 +1,9 @@
 # Ignore JSON files since these will be user-specific budget/data files
 *.json
 
+# Ignore Excel output files
+*.xlsx
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

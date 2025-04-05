@@ -2,6 +2,9 @@
 import json
 import pandas as pd
 import argparse
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
+from openpyxl.formatting.rule import CellIsRule
 from ynab_averages import get_ynab_spending_averages
 
 def load_budget(file_path):
@@ -16,7 +19,15 @@ def compare_averages_with_budget(averages, budget):
         average = averages.get(category, 0)  # Default to 0 if category is not in the budget
         average = -average if average != 0 else 0  # Convert to amount spent
         difference = budget_amount - average
-        percent = difference / budget_amount * 100 if budget_amount != 0 else 0
+
+        if budget_amount == 0:
+            if average != 0:
+                percent = 100
+            else:
+                percent = 0
+        else:
+            percent = -int(difference / budget_amount * 100)
+
         differences.append({
             'Category': category,
             'Average': average,
@@ -25,6 +36,28 @@ def compare_averages_with_budget(averages, budget):
             'Percent': percent
         })
     return differences
+
+def apply_conditional_formatting(file_path):
+    """Apply conditional formatting to the Percent column in the Excel file."""
+    workbook = load_workbook(file_path)
+    sheet = workbook.active
+
+    # Define red fill for Percent > 10%
+    red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+    sheet.conditional_formatting.add(
+        'E2:E1048576',  # Assuming 'Percent' is in column E
+        CellIsRule(operator='greaterThan', formula=['10'], fill=red_fill)
+    )
+
+    # Define yellow fill for 5% <= Percent <= 10%
+    yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+    sheet.conditional_formatting.add(
+        'E2:E1048576',
+        CellIsRule(operator='between', formula=['5', '10'], fill=yellow_fill)
+    )
+
+    # Save the workbook with formatting applied
+    workbook.save(file_path)
 
 def main():
     # Parse command-line arguments
@@ -61,13 +94,17 @@ def main():
         df[col] = df[col].apply(lambda x: f"${x:,.2f}")
 
     # Set the column data type to percentage for Percent
-    df['Percent'] = df['Percent'].apply(lambda x: f"{x:.2f}%")
+    #df['Percent'] = df['Percent'].apply(lambda x: f"{x:.2f}%")
 
     # Sort the DataFrame by the category name then by the 'Months' column
     df.sort_values(by=['Category', 'Months'], inplace=True)
 
     # Write the DataFrame to an Excel file
     df.to_excel(args.output, index=False)
+
+    # Apply conditional formatting to the Excel file
+    apply_conditional_formatting(args.output)
+
     print(f"Comparison results saved to {args.output}")
 
 if __name__ == '__main__':
