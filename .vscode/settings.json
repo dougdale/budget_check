@@ -4,6 +4,7 @@
         "relativedelta",
         "subtransaction",
         "subtransactions",
+        "Uncategorized",
         "ynab"
     ]
 }
