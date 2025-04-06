@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "dateutil",
+        "openpyxl",
         "relativedelta",
         "subtransaction",
         "subtransactions",
